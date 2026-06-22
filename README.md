@@ -14,6 +14,12 @@
 
 ```text
 skills/
+  code-recon/
+    SKILL.md
+    rules/
+    workflows/
+    references/
+    scripts/
   eternum/
     README.md
     eternum-renpy-save-editing/
@@ -28,6 +34,9 @@ skills/
   Eternum 相关技能分类，主要收录存档修改、验证、脚本化处理等技能。
 
 ## 技能索引
+
+- [code-recon](./skills/code-recon/SKILL.md)
+  用于在现有代码库中结合 fast-context 和 codegraph 定位功能、追踪流程、查找调用方和评估改动影响面。
 
 - [eternum-renpy-save-editing](./skills/eternum/eternum-renpy-save-editing/SKILL.md)
   用于修改、验证和重新签名 Eternum / Ren'Py `.save` 存档，适合处理字段不在 `json`、修改后提示“另一台设备创建”、以及需要脚本化改写 `log` 和 `signatures` 的场景。

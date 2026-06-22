@@ -1,0 +1,16 @@
+{
+  "_comment": "Cursor hooks for code-recon. Copy to .cursor/hooks.json. CLAUDE_HARNESS=cursor switches the context-injection JSON shape. Schema matches Claude Code CLI v2.1+ (nested hooks array with type:command).",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "CLAUDE_HARNESS=cursor bash .cursor/hooks/session-start"
+          }
+        ]
+      }
+    ]
+  }
+}

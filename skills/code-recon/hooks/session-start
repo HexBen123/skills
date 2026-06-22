@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# session-start — re-inject the code-recon router at startup/clear/compact.
+# Adapted from obra/superpowers + skill-based-architecture (templates/hooks/session-start).
+#
+# On /clear and /compact the agent's context is summarized and SKILL.md can drop
+# out of memory — exactly when it stops reaching for the fast-context+codegraph
+# combo. This hook reads the one router file and re-injects it in the JSON shape
+# each harness expects. It injects exactly one SKILL.md, never every skill.
+#
+# Install (Claude Code, per-project): copy to .claude/hooks/, wire .claude/settings.json (hooks.json)
+# Install (Claude Code, global):      copy to ~/.claude/hooks/, wire ~/.claude/settings.json
+# Install (Cursor):                   copy to .cursor/hooks/, wire .cursor/hooks.json (hooks-cursor.json)
+# Override the router location with SKILL_PATH=/abs/path/to/SKILL.md if autodetect misses.
+
+set -euo pipefail
+
+HARNESS="${CLAUDE_HARNESS:-${SESSION_HARNESS:-claude}}"
+
+pick_skill_path() {
+  # 1) Explicit override wins.
+  if [[ -n "${SKILL_PATH:-}" && -f "${SKILL_PATH:-}" ]]; then
+    printf '%s\n' "$SKILL_PATH"; return 0
+  fi
+  # 2) Conventional locations (project-local, then global install).
+  local -a candidates=(
+    "skills/code-recon/SKILL.md"
+    ".claude/skills/code-recon/SKILL.md"
+    "$HOME/.claude/skills/code-recon/SKILL.md"
+  )
+  local path
+  for path in "${candidates[@]}"; do
+    [[ -f "$path" ]] && { printf '%s\n' "$path"; return 0; }
+  done
+  # 3) Single-skill fallback: safe because it injects exactly one SKILL.md.
+  shopt -s nullglob
+  local -a skill_files=(skills/*/SKILL.md)
+  shopt -u nullglob
+  if [[ "${#skill_files[@]}" -eq 1 ]]; then
+    printf '%s\n' "${skill_files[0]}"; return 0
+  fi
+  return 1
+}
+
+INJECT_PATH="$(pick_skill_path || true)"
+
+# Fail silently — never break the session if no unambiguous router exists.
+[[ -z "${INJECT_PATH:-}" ]] && exit 0
+
+# JSON-escape the router body (python3 preferred; jq fallback).
+if command -v python3 >/dev/null 2>&1; then
+  SKILL_BODY=$(python3 -c 'import json,sys; print(json.dumps(open(sys.argv[1]).read()))' "$INJECT_PATH")
+elif command -v jq >/dev/null 2>&1; then
+  SKILL_BODY=$(jq -Rs . < "$INJECT_PATH")
+else
+  exit 0
+fi
+
+case "$HARNESS" in
+  cursor)
+    printf '{"additional_context": %s}\n' "$SKILL_BODY" ;;
+  claude|claude-code)
+    printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":%s}}\n' "$SKILL_BODY" ;;
+  copilot|opencode|gemini|*)
+    printf '{"additionalContext": %s}\n' "$SKILL_BODY" ;;
+esac

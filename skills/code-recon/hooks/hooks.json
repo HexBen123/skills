@@ -1,0 +1,16 @@
+{
+  "_comment": "Claude Code hooks fragment for code-recon. Copy to .claude/settings.json (per-project) or ~/.claude/settings.json (global), or merge this top-level 'hooks' object into an existing settings file. Adjust the command path to where you put the session-start script. Schema verified against Claude Code CLI v2.1+ (nested 'hooks' array of {type,command}).",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/session-start"
+          }
+        ]
+      }
+    ]
+  }
+}
